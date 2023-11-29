@@ -53,7 +53,6 @@ class GridWorld:
                         raise Exception('Cell has already been occupied!')
                 else:
                     raise Exception( 'Failure! agent index: ' + str(nagents + 1) )
-                    return False
             return True
         return False
 

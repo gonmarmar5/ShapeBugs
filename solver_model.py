@@ -7,24 +7,30 @@ from visualize import *
 
 #### CONSTANTS ####
 
-WORLD_WIDTH = 15
-WORLD_HEIGHT = 15
-NUM_AGENTS = 15
-GOAL = ((3,2),(4,2),(5,2),(2,3),(6,3),(2,4),(6,4), \
-        (3,6),(4,6),(5,6),(6,6),(2,7),(5,7),(3,8),(4,8),(5,8),(6,8), \
-        (3,10),(6,10),(2,11),(4,11),(6,11),(2,12),(5,12) \
-        ) 
+WORLD_WIDTH = 40
+WORLD_HEIGHT = 40
+NUM_AGENTS = 350    # square of square_size - e
 
-def get_boundwalls(world):
-    h, w = world.get_size()
-    bwalls = set()
-    for x in range(w):
-        bwalls.add( (0,x) )
-        bwalls.add( (h-1,x) )
-    for y in range(h):
-        bwalls.add( (y,0) )
-        bwalls.add( (y,w-1) )
-    return tuple(bwalls)
+# Tamaño del cuadrado
+square_size = 20
+
+# Coordenadas del cuadrado centrado
+square_center_x = WORLD_WIDTH // 2
+square_center_y = WORLD_WIDTH // 2
+
+# Calcular las esquinas del cuadrado
+half_size = square_size // 2
+
+square_top_left = (square_center_x - half_size, square_center_y - half_size)
+square_top_right = (square_center_x + half_size, square_center_y - half_size)
+square_bottom_left = (square_center_x - half_size, square_center_y + half_size)
+square_bottom_right = (square_center_x + half_size, square_center_y + half_size)
+
+# Crea un cuadrado de tamaño square_size centrado en el centro del mundo
+GOAL = [
+    (x, y) for x in range(square_center_x - half_size, square_center_x + half_size + 1)
+    for y in range(square_center_y - half_size, square_center_y + half_size + 1)
+]
 
 class SolverModel:
     def __init__(self, world, visualize = None):
@@ -107,16 +113,7 @@ class SolverModel:
 if __name__ == "__main__":
     
     world_grid = world.GridWorld(WORLD_WIDTH, WORLD_HEIGHT)
-
-    # Creation of the limits of the world
-    bwalls = get_boundwalls(world_grid)
-    world_grid.add_rocks( bwalls )
-
-    # Addition of the agents    
     world_grid.add_agents_rand(NUM_AGENTS)
-
-    # Addition of the goal positions
-
     world_grid.add_goal_pos(GOAL)
 
     vis = Visualize(world_grid)
@@ -126,7 +123,7 @@ if __name__ == "__main__":
 
     vis.canvas.pack()
     vis.canvas.update()
-    vis.canvas.after(200)
+    vis.canvas.after(100)
 
     solver = SolverModel(world_grid, vis)
 
@@ -146,7 +143,7 @@ if __name__ == "__main__":
                 agents_inside += 1
         print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
         vis.canvas.update()
-        vis.canvas.after(200)
+        vis.canvas.after(100)
 
         if(finished):
             break
@@ -154,7 +151,7 @@ if __name__ == "__main__":
         iter_val += 1
 
     vis.canvas.update()
-    vis.canvas.after(2500)  
+    vis.canvas.after(25000000)  
 
 # Another possible goals:
 
