@@ -8,10 +8,10 @@ from macros import *
 
 WORLD_WIDTH = 11
 WORLD_HEIGHT = 11
-NUM_AGENTS = 20    # square of square_size - e
+NUM_AGENTS = 49    # square of square_size - e
 
 # Tamaño del cuadrado
-square_size = 4
+square_size = 6
 
 # Coordenadas del cuadrado centrado
 square_center_x = WORLD_WIDTH // 2
@@ -141,7 +141,7 @@ class SolverModel:
             # Mueve el agente a la nueva posición
             self.update_agent_position(agent, current_pos, new_pos) # todo un agente no puede moverse a mas de 1 casilla
 
-    def divide_goal_into_subregions(self, subregion_size=5):    #todo Camibiar para que sea el tamaño de la fila de GOAL
+    def divide_goal_into_subregions(self, subregion_size=2):    
         """
         Divide la figura objetivo en subregiones.
 
@@ -184,7 +184,7 @@ class SolverModel:
 
     def choose_position_in_subregion(self, subregion_idx, subregions):
         """
-        Elige una posición aleatoria dentro de una subregión.
+        Elige una posición dentro de una subregión considerando maximizar la densidad en el centro de GOAL.
 
         Parameters:
         - subregion_idx: Índice de la subregión en la que se moverá el agente.
@@ -193,15 +193,18 @@ class SolverModel:
         Returns:
         - tuple: Nueva posición en la subregión.
         """
-        # Implementa la lógica para elegir una posición en la subregión
-        # Puedes ajustar la lógica según tus necesidades específicas
-        # Ejemplo: elige una posición aleatoria en la subregión
-        
         # Obtén la subregión correspondiente al índice
         subregion = subregions[subregion_idx]
 
-        # Elige una posición aleatoria en la subregión
-        new_pos = random.choice(subregion)
+        # Obtén las posiciones en el centro de GOAL
+        center_goal_positions = [(pos[0], pos[1]) for pos in subregion if (pos[0], pos[1]) in self.goal_pos]
+
+        if center_goal_positions:
+            # Si hay casillas en el centro de GOAL, elige una posición aleatoria en el centro
+            new_pos = random.choice(center_goal_positions)
+        else:
+            # Si no hay casillas en el centro de GOAL, elige una posición aleatoria en la subregión
+            new_pos = random.choice(subregion)
 
         return new_pos
 
@@ -225,9 +228,9 @@ class SolverModel:
             # Actualiza aindx_goalreached si el agente alcanza una posición objetivo
             if new_pos in self.goal_pos:
                 self.world.aindx_goalreached[agent] = True
-        else:
+        # else:
             # La casilla está ocupada, no permite que el agente se mueva
-            print(f"No se puede mover el agente {agent} a la casilla ocupada {new_pos}")
+            # print(f"No se puede mover el agente {agent} a la casilla ocupada {new_pos}")
 
     def check_goal_completion(self):
         """
@@ -277,6 +280,6 @@ if __name__ == "__main__":
 
         print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
         vis.canvas.update()
-        vis.canvas.after(500)
+        vis.canvas.after(100)
 
         iter_val += 1
