@@ -1,18 +1,17 @@
 import numpy as np
-
+import random
 import gworld as world
-import cost_heur_astar as ch_astar
-from visualize import *
-
+from visualize import Visualize
+from macros import *
 
 #### CONSTANTS ####
 
-WORLD_WIDTH = 40
-WORLD_HEIGHT = 40
-NUM_AGENTS = 350    # square of square_size - e
+WORLD_WIDTH = 10
+WORLD_HEIGHT = 10
+NUM_AGENTS = 10    # square of square_size - e
 
 # Tamaño del cuadrado
-square_size = 20
+square_size = 4
 
 # Coordenadas del cuadrado centrado
 square_center_x = WORLD_WIDTH // 2
@@ -33,82 +32,57 @@ GOAL = [
 ]
 
 class SolverModel:
-    def __init__(self, world, visualize = None):
+    def __init__(self, world, visualize=None):
         self.world = world
         self.goal_pos = world.goal_pos
-        self.cost_heur = dict()
-        self.update_cost_heur()
-        self.needs_update = False
         self.vis = visualize
-
-    def update_cost_heur(self):
-        agents, goals = self.update_goal_pos()
-        start = []
-        for agent in agents:
-            start.append(self.world.aindx_cpos[agent])
-        self.cost_heur = ch_astar.get_costmat(self.world.get_nbor_cells,
-                                        goals,
-                                        start,
-                                        lambda cell: 1,
-                                        lambda cell: cell not in self.world.goal_blocked and not self.world.is_blocked(cell[0], cell[1]),
-                                        self.cost_heur )
-        return self.cost_heur
-
-    def update_goal_pos(self):
-        agents = []
-        goal_pos = self.goal_pos
-        for agent in self.world.get_agents():
-            if(self.world.aindx_goalreached[agent]):
-                if( self.world.aindx_cpos[agent] in goal_pos ):
-                    goal_pos.remove( self.world.aindx_cpos[agent] )
-            else:
-                agents.append( agent )
-        self.goal_pos = goal_pos
-        return agents, goal_pos
-
-    def agent_greedy_step(self, agent):
-        cpos = self.world.aindx_cpos[agent]
-        nbors = self.world.get_nbor_cells(cpos)
-
-        nbor0 = nbors[-1]
-        best_nbor = nbor0
-        # print self.cost_heur
-        min_cost = self.cost_heur[nbor0][0]
-
-        for nbor in nbors:
-            if(self.world.passable(nbor) and nbor in self.cost_heur):
-                tcost = self.cost_heur[nbor][0]
-                if(tcost < min_cost):
-                    min_cost = tcost
-                    best_nbor = nbor
-
-        nxt_action = self.world.pos_to_action(cpos, best_nbor)
-        return best_nbor, nxt_action
-
+    
     def solve_step(self):
-        act_agents, goal_pos = self.update_goal_pos()
-        random.shuffle(act_agents)
+        """
+        Realiza un paso en el proceso de solución.
+        Implementa la lógica de movimiento aleatorio de los agentes con envolvimiento.
+        Actualiza aindx_goalreached si un agente se encuentra dentro de una posición objetivo.
+        """
+        for agent in self.world.get_agents():
+            if not self.world.aindx_goalreached[agent]:
+                # Obtiene la posición actual del agente
+                current_pos = self.world.aindx_cpos[agent]
 
-        for agent in act_agents:
+                # Obtiene las posiciones vecinas posibles
+                possible_moves = [
+                    (current_pos[0] - 1, current_pos[1]),  # Movimiento hacia arriba
+                    (current_pos[0] + 1, current_pos[1]),  # Movimiento hacia abajo
+                    (current_pos[0], current_pos[1] - 1),  # Movimiento hacia la izquierda
+                    (current_pos[0], current_pos[1] + 1)   # Movimiento hacia la derecha
+                ]
 
-            self.update_goal_pos()
+                # Aplica envolvimiento horizontal y vertical
+                possible_moves = [(x % self.world.h, y % self.world.w) for x, y in possible_moves]
 
-            if (self.needs_update):
-                self.update_cost_heur()
-                self.needs_update = False
+                # Filtra las posiciones vecinas posibles para obtener solo las posiciones transitables
+                valid_moves = [move for move in possible_moves if self.world.passable(move)]
 
-            best_nbor, nxt_action = self.agent_greedy_step(agent)
+                if valid_moves:
+                    # Elije aleatoriamente una posición vecina válida y actualiza la posición del agente
+                    new_pos = random.choice(valid_moves)
+                    self.world.cells[current_pos[0]][current_pos[1]] = UNOCCUPIED
+                    self.world.cells[new_pos[0]][new_pos[1]] = agent
+                    self.world.aindx_cpos[agent] = new_pos
 
-            self.vis.canvas.update()
-            self.vis.canvas.after(100)
+                    # Actualiza aindx_goalreached si el agente alcanza una posición objetivo
+                    if new_pos in self.goal_pos:
+                        self.world.aindx_goalreached[agent] = True
 
-            self.world.agent_action(agent, nxt_action)
+        # Verifica si todos los agentes han alcanzado una posición objetivo
+        if all(self.world.aindx_goalreached[agent] for agent in self.world.get_agents()):
+            print("¡Todos los agentes han alcanzado una posición objetivo!")
+            self.vis.frame.destroy()  
+            exit()  
 
-            if(best_nbor in self.goal_pos):
-                self.world.aindx_goalreached[agent] = True
-                self.world.goal_blocked.append( best_nbor )
-
-                self.needs_update = True
+        # Actualiza la visualización después de realizar los movimientos aleatorios
+        if self.vis:
+            for agent in self.world.get_agents():
+                self.vis.update_agent_vis(agent)
 
 if __name__ == "__main__":
     
@@ -127,7 +101,6 @@ if __name__ == "__main__":
 
     solver = SolverModel(world_grid, vis)
 
-    finished = False
     iter_val = 0
 
     while (True):
@@ -136,35 +109,11 @@ if __name__ == "__main__":
         agents_inside = 0
         
         for agent in world_grid.get_agents():
-            # En caso de que el agente no haya llegado a su meta, se sigue iterando
-            if (not world_grid.aindx_goalreached[agent]):
-                finished = False
-            else:
+            if (world_grid.aindx_goalreached[agent]):
                 agents_inside += 1
+
         print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
         vis.canvas.update()
-        vis.canvas.after(100)
-
-        if(finished):
-            break
+        vis.canvas.after(500)
 
         iter_val += 1
-
-    vis.canvas.update()
-    vis.canvas.after(25000000)  
-
-# Another possible goals:
-
-# GOAL 2:
-# a.add_rocks( ( (1,1),(3,3),(1,3),(3,1),(2,4) ) )
-# # a.add_agents( ((3,2),(1,6),(7,8),(2,6),(2,8),(5,6),(4,7)) )
-# a.add_agents_rand(7)
-# a.add_goal_pos( ( (2,3),(6,1),(8,7),(6,2),(8,2),(6,5),(7,4) ) )
-
-# GOAL 3:
-# a.add_agents_rand(27)
-# a.add_goal_pos( ( (2,2),(3,2),(4,2),(3,3),(2,4),(3,4),(4,4), \
-#                   (3,6),(2,7),(3,7),(4,7),(3,8), \
-#                   (2,10),(3,10),(4,10),(3,11),(2,12),(3,12),(4,12),
-#                   (6,2),(6,3),(6,4), (6,6),(6,7),(6,8), (6,10),(6,11),(6,12) \
-#                   ) )
