@@ -38,11 +38,15 @@ class Visualize:
         nrows, ncols = self.world.get_size()
         for row in range(nrows):
             for col in range(ncols):
+                if (row, col) in self.world.goal_pos:
+                    fill_color = 'lightgrey'  # Color gris claro para las casillas GOAL
+                else:
+                    fill_color = 'white'
                 self.vis_cells[row][col] = self.canvas.create_rectangle(FRAME_MARGIN + self.cell_w * col,
                                                                         FRAME_MARGIN + self.cell_h * row,
                                                                         FRAME_MARGIN + self.cell_w * (col + 1),
                                                                         FRAME_MARGIN + self.cell_h * (row + 1))
-                self.canvas.itemconfig(self.vis_cells[row][col], fill='white')
+                self.canvas.itemconfig(self.vis_cells[row][col], fill=fill_color, outline='black')
 
     def get_pos_in_cell(self, crow, ccol):
         """
