@@ -8,7 +8,7 @@ from macros import *
 
 WORLD_WIDTH = 11
 WORLD_HEIGHT = 11
-NUM_AGENTS = 10    # square of square_size - e
+NUM_AGENTS = 20    # square of square_size - e
 
 # Tamaño del cuadrado
 square_size = 4
@@ -47,39 +47,13 @@ class SolverModel:
             if not self.world.aindx_goalreached[agent]:
                 self.move_agent(agent)
             else:
-                self.move_agent_within_goal(agent)
+                self.move_agent_within_goal_based_on_density(agent)
+
         self.check_goal_completion()
 
         self.update_visualization()
 
-    def move_agent(self, agent):
-        """
-        Mueve un agente aleatoriamente dentro de la forma definida.
-
-        Parameters:
-        - agent: Índice del agente a mover.
-        """
-        current_pos = self.world.aindx_cpos[agent]
-        valid_moves = self.get_valid_moves(current_pos)
-        
-        if valid_moves:
-            new_pos = random.choice(valid_moves)
-            self.update_agent_position(agent, current_pos, new_pos)
-
-    def move_agent_within_goal(self, agent):
-        """
-        Mueve un agente aleatoriamente dentro de una casilla GOAL.
-
-        Parameters:
-        - agent: Índice del agente a mover.
-        """
-        current_pos = self.world.aindx_cpos[agent]
-        valid_moves = self.get_valid_moves_within_goal(current_pos)
-        
-        if valid_moves:
-            new_pos = random.choice(valid_moves)
-            self.update_agent_position(agent, current_pos, new_pos)
-
+    ### Agentes fuera de la figura ####
     def get_valid_moves(self, current_pos):
         """
         Obtiene las posiciones vecinas válidas dentro de la forma definida.
@@ -103,6 +77,22 @@ class SolverModel:
         
         return valid_moves
 
+    def move_agent(self, agent):
+        """
+        Mueve un agente aleatoriamente dentro de la forma definida.
+
+        Parameters:
+        - agent: Índice del agente a mover.
+        """
+        current_pos = self.world.aindx_cpos[agent]
+        valid_moves = self.get_valid_moves(current_pos)
+        
+        if valid_moves:
+            new_pos = random.choice(valid_moves)
+            self.update_agent_position(agent, current_pos, new_pos)
+
+    ### Agentes dentro de la figura ####
+
     def get_valid_moves_within_goal(self, current_pos):
         """
         Obtiene las posiciones vecinas válidas dentro de una casilla GOAL.
@@ -125,7 +115,98 @@ class SolverModel:
         valid_moves = [move for move in possible_moves if move in self.goal_pos]
         
         return valid_moves
-    
+
+    def move_agent_within_goal_based_on_density(self, agent):
+        """
+        Mueve un agente en base a la densidad de agentes dentro de la figura.
+
+        Parameters:
+        - agent: Índice del agente a mover.
+        """
+        current_pos = self.world.aindx_cpos[agent]
+        valid_moves = self.get_valid_moves_within_goal(current_pos)
+        
+        if valid_moves:
+            # Divide la figura objetivo en subregiones
+            subregions = self.divide_goal_into_subregions()
+
+            # Calcula la densidad de agentes en cada subregión
+            agent_density_in_subregions = [self.calculate_agent_density(subregion) for subregion in subregions]
+
+            # Encuentra la subregión menos densa y elige una posición en esa subregión
+            min_density_subregion = min(enumerate(agent_density_in_subregions), key=lambda x: x[1])[0]
+            
+            new_pos = self.choose_position_in_subregion(min_density_subregion, subregions)
+
+            # Mueve el agente a la nueva posición
+            self.update_agent_position(agent, current_pos, new_pos) # todo un agente no puede moverse a mas de 1 casilla
+
+    def divide_goal_into_subregions(self, subregion_size=5):    #todo Camibiar para que sea el tamaño de la fila de GOAL
+        """
+        Divide la figura objetivo en subregiones.
+
+        Parameters:
+        - subregion_size: Tamaño de las subregiones.
+
+        Returns:
+        - list: Lista de subregiones.
+        """
+        subregions = []
+
+        for i in range(0, len(self.goal_pos), subregion_size):
+            subregion = self.goal_pos[i:i+subregion_size]
+            subregions.append(subregion)
+        return subregions
+
+    def calculate_agent_density(self, subregion):
+        """
+        Calcula la densidad de agentes en una subregión.
+
+        Parameters:
+        - subregion: Subregión de la figura objetivo.
+
+        Returns:
+        - float: Densidad de agentes en la subregión.
+        """
+        num_agents = 0
+        # Calcula el número de agentes en la subregión
+        for agent in self.world.get_agents():
+            if self.world.aindx_goalreached[agent]:
+                if self.world.aindx_cpos[agent] in subregion:
+                    num_agents += 1
+
+        # Calcula el tamaño total de la subregión
+        subregion_size = len(subregion)
+
+        # Calcula la densidad de agentes dividiendo el número de agentes por el tamaño total de la subregión
+        density = num_agents / subregion_size if subregion_size > 0 else 0.0
+        return density
+
+    def choose_position_in_subregion(self, subregion_idx, subregions):
+        """
+        Elige una posición aleatoria dentro de una subregión.
+
+        Parameters:
+        - subregion_idx: Índice de la subregión en la que se moverá el agente.
+        - subregions: Lista de subregiones.
+
+        Returns:
+        - tuple: Nueva posición en la subregión.
+        """
+        # Implementa la lógica para elegir una posición en la subregión
+        # Puedes ajustar la lógica según tus necesidades específicas
+        # Ejemplo: elige una posición aleatoria en la subregión
+        
+        # Obtén la subregión correspondiente al índice
+        subregion = subregions[subregion_idx]
+
+        # Elige una posición aleatoria en la subregión
+        new_pos = random.choice(subregion)
+
+        return new_pos
+
+    ### Global functions ####    
+
     def update_agent_position(self, agent, current_pos, new_pos):
         """
         Actualiza la posición de un agente en el mundo.
@@ -180,7 +261,7 @@ if __name__ == "__main__":
     vis.canvas.pack()
     vis.canvas.update()
     vis.canvas.after(100)
-
+    
     solver = SolverModel(world_grid, vis)
 
     iter_val = 0
