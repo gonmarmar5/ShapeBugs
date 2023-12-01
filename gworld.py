@@ -123,3 +123,70 @@ class GridWorld:
         """
         y, x = pos[0], pos[1]
         return self.cells[y][x]
+    
+    def get_valid_moves(self, current_pos):
+        """
+        Obtiene las posiciones vecinas válidas dentro de la forma definida.
+
+        Parameters:
+        - current_pos: Tupla que representa la posición actual.
+
+        Returns:
+        - list: Lista de posiciones vecinas válidas.
+        """
+        possible_moves = [
+            (current_pos[0] - 1, current_pos[1]),  # Movimiento hacia arriba
+            (current_pos[0] + 1, current_pos[1]),  # Movimiento hacia abajo
+            (current_pos[0], current_pos[1] - 1),  # Movimiento hacia la izquierda
+            (current_pos[0], current_pos[1] + 1)   # Movimiento hacia la derecha
+        ]
+
+        # Aplica envolvimiento horizontal y vertical
+        possible_moves = [(x % self.h, y % self.w) for x, y in possible_moves]
+
+        # Filtra las posiciones vecinas posibles para obtener solo las posiciones transitables
+        valid_moves = [move for move in possible_moves if self.passable(move)]
+        
+        return valid_moves
+
+    def get_agents_in_goal(self):
+            """
+            Obtiene los agentes que se encuentran dentro de la figura objetivo.
+
+            Returns:
+            - list: Lista de índices de agentes dentro de la figura objetivo.
+            """
+            agents_in_goal = [agent for agent, pos in self.aindx_cpos.items() if pos in self.goal_pos]
+            return agents_in_goal
+
+    def move_agent_randomly(self, agent):
+        """
+        Desplaza aleatoriamente un agente a una posición aleatoria en el mundo.
+
+        Parameters:
+        - agent: Índice del agente a desplazar.
+        """
+        if agent in self.aindx_cpos:
+            current_pos = self.aindx_cpos[agent]
+
+            # Obtiene una posición aleatoria en el mundo
+            new_pos = (random.randint(0, self.h - 1), random.randint(0, self.w - 1))
+
+            # Actualiza la posición del agente
+            self.cells[current_pos[0]][current_pos[1]] = UNOCCUPIED
+            self.cells[new_pos[0]][new_pos[1]] = agent
+            self.aindx_cpos[agent] = new_pos
+
+    def remove_agent(self, agent):
+        """
+        Elimina un agente del mundo.
+
+        Parameters:
+        - agent: Índice del agente a eliminar.
+        """
+        if agent in self.aindx_cpos:
+            current_pos = self.aindx_cpos[agent]
+            self.cells[current_pos[0]][current_pos[1]] = UNOCCUPIED
+            del self.aindx_cpos[agent]
+            del self.aindx_goalreached[agent]
+

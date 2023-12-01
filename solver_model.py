@@ -6,12 +6,12 @@ from macros import *
 
 #### CONSTANTS ####
 
-WORLD_WIDTH = 11
-WORLD_HEIGHT = 11
-NUM_AGENTS = 49    # square of square_size - e
+WORLD_WIDTH = 21
+WORLD_HEIGHT = 21
+NUM_AGENTS = 120    # square of square_size - e
 
 # Tamaño del cuadrado
-square_size = 6
+square_size = 10
 
 # Coordenadas del cuadrado centrado
 square_center_x = WORLD_WIDTH // 2
@@ -141,7 +141,7 @@ class SolverModel:
             # Mueve el agente a la nueva posición
             self.update_agent_position(agent, current_pos, new_pos) # todo un agente no puede moverse a mas de 1 casilla
 
-    def divide_goal_into_subregions(self, subregion_size=2):    
+    def divide_goal_into_subregions(self, subregion_size=11):    
         """
         Divide la figura objetivo en subregiones.
 
@@ -249,9 +249,25 @@ class SolverModel:
         if self.vis:
             for agent in self.world.get_agents():
                 self.vis.update_agent_vis(agent)
-
-if __name__ == "__main__":
     
+if __name__ == "__main__":
+
+    def agents_translation(agents_to_move = NUM_AGENTS//4, iter = 25):
+        # Mueve los agentes aleatoriamente después de 'iter' iteraciones
+        if agents_inside > agents_to_move and iter_val == iter:
+            agents_to_move = random.sample(world_grid.get_agents_in_goal(), agents_to_move)
+            for agent in agents_to_move:
+                world_grid.move_agent_randomly(agent)
+                vis.update_agent_vis(agent, True)
+
+    def agents_death(num_of_death = NUM_AGENTS//4, iter = 25):
+        if iter_val == iter:
+            # Eliminar algunos agentes
+            agents_to_remove = random.sample(world_grid.get_agents(), num_of_death)
+            for agent in agents_to_remove:
+                world_grid.remove_agent(agent)
+                vis.remove_agent_vis(agent)  # Asegúrate de tener una función para eliminar visualmente al agente
+
     world_grid = world.GridWorld(WORLD_WIDTH, WORLD_HEIGHT)
     world_grid.add_agents_rand(NUM_AGENTS)
     world_grid.add_goal_pos(GOAL)
@@ -277,9 +293,12 @@ if __name__ == "__main__":
         for agent in world_grid.get_agents():
             if (world_grid.aindx_goalreached[agent]):
                 agents_inside += 1
-
+        
+        #agents_translation()
+        #agents_death()
+        
         print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
         vis.canvas.update()
-        vis.canvas.after(100)
+        vis.canvas.after(500)
 
         iter_val += 1

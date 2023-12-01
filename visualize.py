@@ -80,7 +80,7 @@ class Visualize:
                     self.aindx_obj[cell] = self.canvas.create_oval(x1, y1, x2, y2, fill=COLORS[color_indx],
                                                                     outline=COLORS[color_indx])
 
-    def update_agent_vis(self, aindx):
+    def update_agent_vis(self, aindx, desp = False):
         """
         Actualiza la posición visual de un agente en la interfaz gráfica.
 
@@ -92,10 +92,11 @@ class Visualize:
 
         # Cambia el color a rojo si el agente ha alcanzado una posición objetivo
         color = 'green' if (cy, cx) in self.world.goal_pos else 'red'
-        
+        if desp:
+            color = 'blue'
+
         self.canvas.coords(self.aindx_obj[aindx], x1, y1, x2, y2)
         self.canvas.itemconfig(self.aindx_obj[aindx], fill=color)
-
         
 
     def get_cell_size(self):
@@ -122,3 +123,15 @@ class Visualize:
         agent_h = self.cell_h - 2 * CELL_MARGIN
         agent_w = self.cell_w - 2 * CELL_MARGIN
         return (agent_h, agent_w)
+    
+    def remove_agent_vis(self, aindx):
+        """
+        Elimina visualmente a un agente de la interfaz gráfica.
+
+        Parameters:
+        - aindx (int): Índice del agente a eliminar visualmente.
+        """
+        # Elimina el objeto visual asociado al agente
+        self.canvas.delete(self.aindx_obj[aindx])
+        # Asegúrate de eliminar el objeto de la lista
+        del self.aindx_obj[aindx]
