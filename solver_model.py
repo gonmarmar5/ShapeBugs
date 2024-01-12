@@ -285,7 +285,6 @@ if __name__ == "__main__":
             for agent in agents_to_move:
                 world_grid.move_agent_randomly(agent)
                 vis.update_agent_vis(agent, True)
-        time.sleep(2)
 
     def agents_death(num_of_death = NUM_AGENTS//4, iter = 25):
         if iter_val == iter:
@@ -464,12 +463,17 @@ if __name__ == "__main__":
         
         print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
         vis.canvas.update()
+        if iter_val == 25:
+            time.sleep(2)
         vis.canvas.after(TIME_RESET)
 
         iter_val += 1
     
+    print("Se terminó el movimiento de los agentes. Han terminado: ", agents_inside , "agentes dentro de la figura de ", NUM_AGENTS, " agentes iniciales.")
+
     # Eliminamos todos los agentes fuera de la figura 
     remove_agents_outside_shape()
+    print("Se han eliminado", NUM_AGENTS - len(world_grid.get_agents()) ,"agentes que estaban fuera de la figura.")
     
     # Movemos la figura alrededor del mapa
     move_goal_pos_left(WORLD_WIDTH//4 - 1)
@@ -493,5 +497,5 @@ if __name__ == "__main__":
     for agent in world_grid.get_agents():
         if (world_grid.aindx_goalreached[agent]):
             agents_inside += 1
-    print("Se terminó el movimiento de la figura. Han terminado: ", agents_inside , "agentes dentro de la figura de ", NUM_AGENTS, " agentes iniciales.")
+    print("Se terminó el movimiento de la figura. Han terminado: ", agents_inside , "agentes dentro de la figura de ", NUM_AGENTS, " agentes iniciales. (", round(agents_inside/NUM_AGENTS*100,2), "%")
     time.sleep(5)
