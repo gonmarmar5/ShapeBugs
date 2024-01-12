@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import random
 import gworld as world
@@ -9,6 +10,8 @@ from macros import *
 WORLD_WIDTH = 21
 WORLD_HEIGHT = 21
 NUM_AGENTS = 120    # square of square_size - e
+NUM_ITERATIONS = 100
+TIME_RESET = 100
 
 # Tamaño del cuadrado
 square_size = 10
@@ -49,8 +52,6 @@ class SolverModel:
             else:
                 self.move_agent_within_goal_based_on_density(agent)
 
-        self.check_goal_completion()
-
         self.update_visualization()
 
     ### Agentes fuera de la figura ####
@@ -77,19 +78,48 @@ class SolverModel:
         
         return valid_moves
 
+
     def move_agent(self, agent):
         """
-        Mueve un agente aleatoriamente dentro de la forma definida.
+        Move an agent using a simplified heuristic to bias towards the goal.
 
         Parameters:
-        - agent: Índice del agente a mover.
+        - agent: Index of the agent to move.
         """
         current_pos = self.world.aindx_cpos[agent]
-        valid_moves = self.get_valid_moves(current_pos)
-        
-        if valid_moves:
-            new_pos = random.choice(valid_moves)
-            self.update_agent_position(agent, current_pos, new_pos)
+        goal_pos = self.goal_pos
+
+        new_pos = self.bias_towards_goal(current_pos, goal_pos)
+        self.update_agent_position(agent, current_pos, new_pos)
+
+    def bias_towards_goal(self, current_pos, goal_pos, probability=0.8):
+        """
+        Move towards the goal with a certain probability, otherwise move randomly.
+
+        Parameters:
+        - current_pos: Current position.
+        - goal_pos: List of goal positions.
+        - probability: Probability of moving towards the goal (default is 0.8).
+
+        Returns:
+        - tuple: New position.
+        """
+        if random.random() < probability:
+            # Move towards a random goal position
+            chosen_goal = random.choice(goal_pos)
+            dx = chosen_goal[0] - current_pos[0]
+            dy = chosen_goal[1] - current_pos[1]
+
+            new_pos = (
+                current_pos[0] + int(dx / abs(dx)) if dx != 0 else current_pos[0],
+                current_pos[1] + int(dy / abs(dy)) if dy != 0 else current_pos[1]
+            )
+        else:
+            # Move randomly
+            valid_moves = self.get_valid_moves(current_pos)
+            new_pos = random.choice(valid_moves) if valid_moves else current_pos
+
+        return new_pos
 
     ### Agentes dentro de la figura ####
 
@@ -124,6 +154,10 @@ class SolverModel:
         - agent: Índice del agente a mover.
         """
         current_pos = self.world.aindx_cpos[agent]
+        if current_pos in self.goal_pos:
+                self.world.aindx_goalreached[agent] = True
+        else:
+            self.world.aindx_goalreached[agent] = False
         valid_moves = self.get_valid_moves_within_goal(current_pos)
         
         if valid_moves:
@@ -228,19 +262,11 @@ class SolverModel:
             # Actualiza aindx_goalreached si el agente alcanza una posición objetivo
             if new_pos in self.goal_pos:
                 self.world.aindx_goalreached[agent] = True
+            else:
+                self.world.aindx_goalreached[agent] = False
         # else:
             # La casilla está ocupada, no permite que el agente se mueva
             # print(f"No se puede mover el agente {agent} a la casilla ocupada {new_pos}")
-
-    def check_goal_completion(self):
-        """
-        Verifica si todos los agentes han alcanzado una posición objetivo.
-        Si es así, imprime un mensaje, cierra la ventana de visualización y termina la ejecución del programa.
-        """
-        if all(self.world.aindx_goalreached[agent] for agent in self.world.get_agents()):
-            print("¡Todos los agentes han alcanzado una posición objetivo!")
-            self.vis.frame.destroy()
-            exit()
 
     def update_visualization(self):
         """
@@ -259,6 +285,7 @@ if __name__ == "__main__":
             for agent in agents_to_move:
                 world_grid.move_agent_randomly(agent)
                 vis.update_agent_vis(agent, True)
+        time.sleep(2)
 
     def agents_death(num_of_death = NUM_AGENTS//4, iter = 25):
         if iter_val == iter:
@@ -266,7 +293,141 @@ if __name__ == "__main__":
             agents_to_remove = random.sample(world_grid.get_agents(), num_of_death)
             for agent in agents_to_remove:
                 world_grid.remove_agent(agent)
-                vis.remove_agent_vis(agent)  # Asegúrate de tener una función para eliminar visualmente al agente
+                vis.remove_agent_vis(agent) 
+
+    def check_goal_completion():
+        """
+        Verifica si todos los agentes han alcanzado una posición objetivo.
+        Si es así, imprime un mensaje, cierra la ventana de visualización y termina la ejecución del programa.
+        """
+        if all(world_grid.aindx_goalreached[agent] for agent in world_grid.get_agents()):
+            print("¡Todos los agentes han alcanzado una posición objetivo!")
+            vis.frame.destroy()
+            exit()
+
+    def remove_agents_outside_shape():
+        ''' 
+        Remove agents outside the shape
+        '''
+        print("Se alcanzaron ", NUM_ITERATIONS, " iteraciones. Eliminando agentes fuera de la figura.")
+        agents_outside = []
+        for agent in world_grid.get_agents():
+            if not world_grid.aindx_goalreached[agent]:
+                agents_outside.append(agent)
+        
+        for agent in agents_outside:
+            world_grid.remove_agent(agent)
+            vis.remove_agent_vis(agent) 
+        vis.canvas.update()
+        vis.canvas.after(TIME_RESET)
+
+    def move_goal_pos_left(num_iter):
+        iter_val = 0
+        while iter_val != num_iter:
+            # If any cell of new_goal_positions is the border of the grid, then stop
+            if not any(x == 0 or x == WORLD_WIDTH - 1 or y == 0 or y == WORLD_WIDTH - 1 for x, y in world_grid.goal_pos):
+
+                new_goal_positions = [(gy, gx - 1) for (gy, gx) in world_grid.goal_pos]
+
+                world_grid.update_goal_pos(new_goal_positions)
+                vis.draw_world()
+                vis.draw_agents()
+
+                vis.canvas.update()
+            
+            solver = SolverModel(world_grid, vis)
+            solver.solve_step()
+
+            agents_inside = 0
+
+            for agent in world_grid.get_agents():
+                if world_grid.aindx_goalreached[agent]:
+                    agents_inside += 1
+
+            print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
+            vis.canvas.update()
+            vis.canvas.after(TIME_RESET)
+            iter_val += 1
+
+    def move_goal_pos_up(num_iter):
+        iter_val = 0
+        while iter_val != num_iter:
+            # If any cell of new_goal_positions is the border of the grid, then stop
+            if not any(x == 0 or x == WORLD_WIDTH - 1 or y == 0 or y == WORLD_WIDTH - 1 for x, y in world_grid.goal_pos):
+
+                new_goal_positions = [(gy - 1, gx) for (gy, gx) in world_grid.goal_pos]
+                world_grid.update_goal_pos(new_goal_positions)
+                vis.draw_world()
+                vis.draw_agents()
+
+                vis.canvas.update()
+            solver = SolverModel(world_grid, vis)
+            solver.solve_step()
+
+            agents_inside = 0
+
+            for agent in world_grid.get_agents():
+                if world_grid.aindx_goalreached[agent]:
+                    agents_inside += 1
+
+            print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
+            vis.canvas.update()
+            vis.canvas.after(TIME_RESET)
+            iter_val += 1
+
+    def move_goal_pos_right(num_iter):
+        iter_val = 0
+        while iter_val != num_iter:
+            # If any cell of new_goal_positions is the border of the grid, then stop
+            if not any(x == 0 or x == WORLD_WIDTH - 1 or y == 0 or y == WORLD_WIDTH - 1 for x, y in world_grid.goal_pos):
+
+                new_goal_positions = [(gy, gx + 1) for (gy, gx) in world_grid.goal_pos]
+
+                world_grid.update_goal_pos(new_goal_positions)
+                vis.draw_world()
+                vis.draw_agents()
+
+                vis.canvas.update()
+            
+            solver = SolverModel(world_grid, vis)
+            solver.solve_step()
+
+            agents_inside = 0
+
+            for agent in world_grid.get_agents():
+                if world_grid.aindx_goalreached[agent]:
+                    agents_inside += 1
+
+            print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
+            vis.canvas.update()
+            vis.canvas.after(TIME_RESET)
+            iter_val += 1
+    
+    def move_goal_pos_down(num_iter):
+        iter_val = 0
+        while iter_val != num_iter:
+            # If any cell of new_goal_positions is the border of the grid, then stop
+            if not any(x == 0 or x == WORLD_WIDTH - 1 or y == 0 or y == WORLD_WIDTH - 1 for x, y in world_grid.goal_pos):
+
+                new_goal_positions = [(gy + 1, gx) for (gy, gx) in world_grid.goal_pos]
+                world_grid.update_goal_pos(new_goal_positions)
+                vis.draw_world()
+                vis.draw_agents()
+
+                vis.canvas.update()
+            solver = SolverModel(world_grid, vis)
+            solver.solve_step()
+
+            agents_inside = 0
+
+            for agent in world_grid.get_agents():
+                if world_grid.aindx_goalreached[agent]:
+                    agents_inside += 1
+
+            print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
+            vis.canvas.update()
+            vis.canvas.after(TIME_RESET)
+            iter_val += 1
 
     world_grid = world.GridWorld(WORLD_WIDTH, WORLD_HEIGHT)
     world_grid.add_agents_rand(NUM_AGENTS)
@@ -285,20 +446,52 @@ if __name__ == "__main__":
 
     iter_val = 0
 
-    while (True):
+    while (iter_val != NUM_ITERATIONS):
+        '''
+        First iterations to form the shape
+        '''
         solver.solve_step()
-        finished = True
+
         agents_inside = 0
         
         for agent in world_grid.get_agents():
             if (world_grid.aindx_goalreached[agent]):
                 agents_inside += 1
         
-        #agents_translation()
+        # Funciones que modifican el comportamiento de los agentes, descomentar para probar
+        agents_translation()
         #agents_death()
         
         print('- Iteración ', iter_val, '- Numero de agentes dentro de la forma: ', agents_inside)
         vis.canvas.update()
-        vis.canvas.after(500)
+        vis.canvas.after(TIME_RESET)
 
         iter_val += 1
+    
+    # Eliminamos todos los agentes fuera de la figura 
+    remove_agents_outside_shape()
+    
+    # Movemos la figura alrededor del mapa
+    move_goal_pos_left(WORLD_WIDTH//4 - 1)
+    print("Se alcanzaron ", WORLD_WIDTH//4 - 1, " iteraciones. Moviendo la figura hacia arriba.")
+    time.sleep(0.1)
+    move_goal_pos_up(WORLD_HEIGHT//4 - 1)
+    print("Se alcanzaron ", WORLD_WIDTH//2 - 2, " iteraciones. Moviendo la figura hacia la derecha.")
+    time.sleep(0.1)
+    move_goal_pos_right(WORLD_WIDTH//2 - 2)
+    print("Se alcanzaron ", WORLD_WIDTH//2 - 2, " iteraciones. Moviendo la figura hacia abajo.")
+    time.sleep(0.1)
+    move_goal_pos_down(WORLD_HEIGHT//2 - 2)
+    print("Se alcanzaron ", WORLD_HEIGHT//2 - 2, " iteraciones. Moviendo la figura hacia la izquierda.")
+    time.sleep(0.1)
+    move_goal_pos_left(WORLD_WIDTH//4 - 1)
+    print("Se alcanzaron ", WORLD_WIDTH//4 - 1, " iteraciones. Moviendo la figura hacia arriba.")
+    time.sleep(0.1)
+    move_goal_pos_up(WORLD_HEIGHT//4 - 1)
+    
+    agents_inside = 0
+    for agent in world_grid.get_agents():
+        if (world_grid.aindx_goalreached[agent]):
+            agents_inside += 1
+    print("Se terminó el movimiento de la figura. Han terminado: ", agents_inside , "agentes dentro de la figura de ", NUM_AGENTS, " agentes iniciales.")
+    time.sleep(5)

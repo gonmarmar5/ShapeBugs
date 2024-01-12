@@ -51,6 +51,20 @@ class GridWorld:
             for (gy, gx) in goal_pos:
                 self.goal_pos.append((gy, gx))
 
+    def update_goal_pos(self, new_goal_pos):
+        """
+        Actualiza las posiciones objetivo en la cuadrícula.
+
+        Parameters:
+        - new_goal_pos (list): Lista de tuplas (gy, gx) que representan las nuevas posiciones objetivo.
+        """
+        self.goal_pos = []  # Limpiar las posiciones objetivo actuales
+
+        if new_goal_pos:
+            # print('New Goal pos: ', new_goal_pos)
+            for (gy, gx) in new_goal_pos:
+                self.goal_pos.append((gy, gx))
+
     def add_agents(self, agents_spos):
         """
         Añade agentes a posiciones específicas en la cuadrícula.
