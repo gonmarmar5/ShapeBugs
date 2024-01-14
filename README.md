@@ -1,4 +1,4 @@
-# ShapeBugs
+# GridExplorers
 # Simulación de Agentes en Entorno Bidimensional
 
 Este proyecto implementa un modelo de simulación para estudiar el comportamiento de agentes en un entorno bidimensional con restricciones espaciales. Los agentes se mueven en un mundo de cuadrícula, y la simulación incluye diversas funciones y escenarios para explorar su dinámica.
