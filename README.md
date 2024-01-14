@@ -19,9 +19,9 @@ Este proyecto implementa un modelo de simulación para estudiar el comportamient
 
 La simulación permite llevar a cabo experimentos para explorar el comportamiento de los agentes. Algunos de los experimentos sugeridos incluyen variaciones en el número de agentes, ajustes en la probabilidad de movimiento hacia el objetivo y la observación de cómo la forma central del cuadrado impacta en la distribución de agentes.
 
-## Resultados Imaginarios
+## Resultados
 
-En los resultados imaginarios obtenidos, se observó que configuraciones con densidades poblacionales moderadas mostraron una mayor eficiencia en la convergencia hacia posiciones objetivo. Un aumento en la probabilidad de movimiento hacia el objetivo mejoró significativamente la tasa de éxito de los agentes. Las funciones específicas, como `agents_translation` y `agents_death`, tuvieron impactos notables en la dinámica poblacional y la capacidad de los agentes para superar obstáculos.
+En los resultados obtenidos, se observó que configuraciones con densidades poblacionales moderadas mostraron una mayor eficiencia en la convergencia hacia posiciones objetivo. Un aumento en la probabilidad de movimiento hacia el objetivo mejoró significativamente la tasa de éxito de los agentes. Las funciones específicas, como `agents_translation` y `agents_death`, tuvieron impactos notables en la dinámica poblacional y la capacidad de los agentes para superar obstáculos.
 
 ## Contribuciones
 
